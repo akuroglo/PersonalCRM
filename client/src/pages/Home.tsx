@@ -6,6 +6,9 @@ import { ContactForm } from "@/components/ContactForm";
 import { EmptyState } from "@/components/EmptyState";
 import { Plus, Search } from "lucide-react";
 import type { Contact, InsertContact } from "@shared/schema";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -15,47 +18,78 @@ import {
 } from "@/components/ui/select";
 
 export default function Home() {
-  // TODO: remove mock functionality - replace with API calls
-  const [contacts, setContacts] = useState<Contact[]>([
-    {
-      id: "1",
-      name: "Анна Иванова",
-      birthday: "1990-05-15",
-      lastContact: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      reminderInterval: 7,
-    },
-    {
-      id: "2",
-      name: "Петр Сидоров",
-      birthday: "1985-08-22",
-      lastContact: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      reminderInterval: 14,
-    },
-    {
-      id: "3",
-      name: "Мария Петрова",
-      birthday: null,
-      lastContact: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      reminderInterval: 5,
-    },
-  ]);
-
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | undefined>();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "lastContact" | "reminder">("reminder");
+  const { toast } = useToast();
+
+  const { data: contacts = [], isLoading } = useQuery<Contact[]>({
+    queryKey: ["/api/contacts"],
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: InsertContact) => 
+      apiRequest("POST", "/api/contacts", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
+      setIsFormOpen(false);
+      toast({
+        title: "Контакт добавлен",
+        description: "Контакт успешно добавлен в список",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось добавить контакт",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: InsertContact }) =>
+      apiRequest("PUT", `/api/contacts/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
+      setIsFormOpen(false);
+      setEditingContact(undefined);
+      toast({
+        title: "Контакт обновлен",
+        description: "Изменения успешно сохранены",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить контакт",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) =>
+      apiRequest("DELETE", `/api/contacts/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
+      toast({
+        title: "Контакт удален",
+        description: "Контакт успешно удален из списка",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить контакт",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleAddContact = (data: InsertContact) => {
-    // TODO: remove mock functionality - replace with API call
-    const newContact: Contact = {
-      id: Math.random().toString(),
-      name: data.name,
-      birthday: data.birthday ?? null,
-      lastContact: data.lastContact,
-      reminderInterval: data.reminderInterval,
-    };
-    setContacts([...contacts, newContact]);
-    setIsFormOpen(false);
+    createMutation.mutate(data);
   };
 
   const handleEditContact = (contact: Contact) => {
@@ -64,21 +98,13 @@ export default function Home() {
   };
 
   const handleUpdateContact = (data: InsertContact) => {
-    // TODO: remove mock functionality - replace with API call
     if (editingContact) {
-      setContacts(
-        contacts.map((c) =>
-          c.id === editingContact.id ? { ...c, ...data } : c
-        )
-      );
-      setIsFormOpen(false);
-      setEditingContact(undefined);
+      updateMutation.mutate({ id: editingContact.id, data });
     }
   };
 
   const handleDeleteContact = (id: string) => {
-    // TODO: remove mock functionality - replace with API call
-    setContacts(contacts.filter((c) => c.id !== id));
+    deleteMutation.mutate(id);
   };
 
   const handleCloseForm = () => {
@@ -101,6 +127,17 @@ export default function Home() {
         return aNextReminder - bNextReminder;
       }
     });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Загрузка...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
