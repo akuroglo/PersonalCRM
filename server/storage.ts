@@ -1,37 +1,58 @@
-import { type User, type InsertUser } from "@shared/schema";
+import { type Contact, type InsertContact } from "@shared/schema";
 import { randomUUID } from "crypto";
 
-// modify the interface with any CRUD methods
-// you might need
-
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getContacts(): Promise<Contact[]>;
+  getContact(id: string): Promise<Contact | undefined>;
+  createContact(contact: InsertContact): Promise<Contact>;
+  updateContact(id: string, contact: InsertContact): Promise<Contact | undefined>;
+  deleteContact(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<string, User>;
+  private contacts: Map<string, Contact>;
 
   constructor() {
-    this.users = new Map();
+    this.contacts = new Map();
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getContacts(): Promise<Contact[]> {
+    return Array.from(this.contacts.values());
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async getContact(id: string): Promise<Contact | undefined> {
+    return this.contacts.get(id);
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
+  async createContact(insertContact: InsertContact): Promise<Contact> {
     const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+    const contact: Contact = {
+      id,
+      name: insertContact.name,
+      birthday: insertContact.birthday ?? null,
+      lastContact: insertContact.lastContact,
+      reminderInterval: insertContact.reminderInterval,
+    };
+    this.contacts.set(id, contact);
+    return contact;
+  }
+
+  async updateContact(id: string, insertContact: InsertContact): Promise<Contact | undefined> {
+    const existing = this.contacts.get(id);
+    if (!existing) return undefined;
+    const updated: Contact = {
+      id,
+      name: insertContact.name,
+      birthday: insertContact.birthday ?? null,
+      lastContact: insertContact.lastContact,
+      reminderInterval: insertContact.reminderInterval,
+    };
+    this.contacts.set(id, updated);
+    return updated;
+  }
+
+  async deleteContact(id: string): Promise<boolean> {
+    return this.contacts.delete(id);
   }
 }
 
