@@ -1,5 +1,6 @@
-import { type Contact, type InsertContact } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { type Contact, type InsertContact, contacts } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   getContacts(): Promise<Contact[]>;
@@ -9,51 +10,33 @@ export interface IStorage {
   deleteContact(id: string): Promise<boolean>;
 }
 
-export class MemStorage implements IStorage {
-  private contacts: Map<string, Contact>;
-
-  constructor() {
-    this.contacts = new Map();
-  }
-
+export class DbStorage implements IStorage {
   async getContacts(): Promise<Contact[]> {
-    return Array.from(this.contacts.values());
+    return await db.select().from(contacts);
   }
 
   async getContact(id: string): Promise<Contact | undefined> {
-    return this.contacts.get(id);
+    const result = await db.select().from(contacts).where(eq(contacts.id, id));
+    return result[0];
   }
 
   async createContact(insertContact: InsertContact): Promise<Contact> {
-    const id = randomUUID();
-    const contact: Contact = {
-      id,
-      name: insertContact.name,
-      birthday: insertContact.birthday ?? null,
-      lastContact: insertContact.lastContact,
-      reminderInterval: insertContact.reminderInterval,
-    };
-    this.contacts.set(id, contact);
-    return contact;
+    const result = await db.insert(contacts).values(insertContact).returning();
+    return result[0];
   }
 
   async updateContact(id: string, insertContact: InsertContact): Promise<Contact | undefined> {
-    const existing = this.contacts.get(id);
-    if (!existing) return undefined;
-    const updated: Contact = {
-      id,
-      name: insertContact.name,
-      birthday: insertContact.birthday ?? null,
-      lastContact: insertContact.lastContact,
-      reminderInterval: insertContact.reminderInterval,
-    };
-    this.contacts.set(id, updated);
-    return updated;
+    const result = await db.update(contacts)
+      .set(insertContact)
+      .where(eq(contacts.id, id))
+      .returning();
+    return result[0];
   }
 
   async deleteContact(id: string): Promise<boolean> {
-    return this.contacts.delete(id);
+    const result = await db.delete(contacts).where(eq(contacts.id, id)).returning();
+    return result.length > 0;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DbStorage();
