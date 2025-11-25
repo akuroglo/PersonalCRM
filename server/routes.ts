@@ -11,6 +11,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const contacts = await storage.getContacts();
       res.json(contacts);
     } catch (error) {
+      console.error("Error fetching contacts:", error);
       res.status(500).json({ error: "Failed to fetch contacts" });
     }
   });
@@ -38,6 +39,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
+      console.error("Error creating contact:", error);
       res.status(500).json({ error: "Failed to create contact" });
     }
   });

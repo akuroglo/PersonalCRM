@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertContactSchema, type Contact, type InsertContact } from "@shared/schema";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useEffect } from "react";
 
 const formSchema = insertContactSchema.extend({
   name: z.string().min(1, "Имя обязательно"),
@@ -35,12 +36,22 @@ export function ContactForm({ open, onOpenChange, onSubmit, contact }: ContactFo
     },
   });
 
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        name: contact?.name || "",
+        birthday: contact?.birthday || "",
+        lastContact: contact?.lastContact || new Date().toISOString().split('T')[0],
+        reminderInterval: contact?.reminderInterval || 7,
+      });
+    }
+  }, [open, contact, form]);
+
   const handleSubmit = (data: FormValues) => {
     onSubmit({
       ...data,
       birthday: data.birthday || null,
     });
-    form.reset();
   };
 
   return (
