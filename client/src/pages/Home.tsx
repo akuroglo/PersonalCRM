@@ -4,11 +4,12 @@ import { Input } from "@/components/ui/input";
 import { ContactCard } from "@/components/ContactCard";
 import { ContactForm } from "@/components/ContactForm";
 import { EmptyState } from "@/components/EmptyState";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, LogOut } from "lucide-react";
 import type { Contact, InsertContact } from "@shared/schema";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Select,
   SelectContent,
@@ -23,6 +24,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "lastContact" | "reminder">("reminder");
   const { toast } = useToast();
+  const { signOut, user } = useAuth();
 
   const { data: contacts = [], isLoading } = useQuery<Contact[]>({
     queryKey: ["/api/contacts"],
@@ -144,10 +146,24 @@ export default function Home() {
       <header className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
           <h1 className="text-2xl font-bold" data-testid="text-app-title">Личная CRM</h1>
-          <Button onClick={() => setIsFormOpen(true)} data-testid="button-add-contact">
-            <Plus className="w-4 h-4 mr-2" />
-            Добавить
-          </Button>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground hidden sm:block" data-testid="text-user-email">
+              {user?.email}
+            </span>
+            <Button onClick={() => setIsFormOpen(true)} data-testid="button-add-contact">
+              <Plus className="w-4 h-4 mr-2" />
+              Добавить
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => signOut()}
+              data-testid="button-logout"
+              title="Выйти"
+            >
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </header>
 

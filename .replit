@@ -48,3 +48,10 @@ waitForPort = 5000
 
 [agent]
 integrations = ["javascript_mem_db:1.0.0"]
+
+[userenv]
+
+[userenv.shared]
+SUPABASE_URL = "https://mfqcqpivrldgstbxzslf.supabase.co"
+VITE_SUPABASE_URL = "https://mfqcqpivrldgstbxzslf.supabase.co"
+VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1mcWNxcGl2cmxkZ3N0Ynh6c2xmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQwNzUwMjgsImV4cCI6MjA3OTY1MTAyOH0.yEijlIVRC719SzOzpWpv08El_Accgh5sCmMOjd6SbV8"

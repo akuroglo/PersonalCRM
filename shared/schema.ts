@@ -5,6 +5,7 @@ import { z } from "zod";
 
 export const contacts = pgTable("contacts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
   name: text("name").notNull(),
   birthday: date("birthday"),
   lastContact: date("last_contact").notNull(),
@@ -13,6 +14,7 @@ export const contacts = pgTable("contacts", {
 
 export const insertContactSchema = createInsertSchema(contacts).omit({
   id: true,
+  userId: true,
 });
 
 export type InsertContact = z.infer<typeof insertContactSchema>;

@@ -1,40 +1,47 @@
 import { type Contact, type InsertContact, contacts } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
-  getContacts(): Promise<Contact[]>;
-  getContact(id: string): Promise<Contact | undefined>;
-  createContact(contact: InsertContact): Promise<Contact>;
-  updateContact(id: string, contact: InsertContact): Promise<Contact | undefined>;
-  deleteContact(id: string): Promise<boolean>;
+  getContacts(userId: string): Promise<Contact[]>;
+  getContact(id: string, userId: string): Promise<Contact | undefined>;
+  createContact(contact: InsertContact, userId: string): Promise<Contact>;
+  updateContact(id: string, contact: InsertContact, userId: string): Promise<Contact | undefined>;
+  deleteContact(id: string, userId: string): Promise<boolean>;
 }
 
 export class DbStorage implements IStorage {
-  async getContacts(): Promise<Contact[]> {
-    return await db.select().from(contacts);
+  async getContacts(userId: string): Promise<Contact[]> {
+    return await db.select().from(contacts).where(eq(contacts.userId, userId));
   }
 
-  async getContact(id: string): Promise<Contact | undefined> {
-    const result = await db.select().from(contacts).where(eq(contacts.id, id));
+  async getContact(id: string, userId: string): Promise<Contact | undefined> {
+    const result = await db.select().from(contacts).where(
+      and(eq(contacts.id, id), eq(contacts.userId, userId))
+    );
     return result[0];
   }
 
-  async createContact(insertContact: InsertContact): Promise<Contact> {
-    const result = await db.insert(contacts).values(insertContact).returning();
+  async createContact(insertContact: InsertContact, userId: string): Promise<Contact> {
+    const result = await db.insert(contacts).values({
+      ...insertContact,
+      userId,
+    }).returning();
     return result[0];
   }
 
-  async updateContact(id: string, insertContact: InsertContact): Promise<Contact | undefined> {
+  async updateContact(id: string, insertContact: InsertContact, userId: string): Promise<Contact | undefined> {
     const result = await db.update(contacts)
       .set(insertContact)
-      .where(eq(contacts.id, id))
+      .where(and(eq(contacts.id, id), eq(contacts.userId, userId)))
       .returning();
     return result[0];
   }
 
-  async deleteContact(id: string): Promise<boolean> {
-    const result = await db.delete(contacts).where(eq(contacts.id, id)).returning();
+  async deleteContact(id: string, userId: string): Promise<boolean> {
+    const result = await db.delete(contacts)
+      .where(and(eq(contacts.id, id), eq(contacts.userId, userId)))
+      .returning();
     return result.length > 0;
   }
 }
