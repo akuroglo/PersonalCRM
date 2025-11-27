@@ -20,13 +20,32 @@ export default function ResetPassword() {
     const checkSession = async () => {
       try {
         const supabase = await getSupabase();
+        
+        // First, check if there's a recovery token in the URL hash
+        // Supabase automatically creates a session from the access_token in the URL
         const { data: { session } } = await supabase.auth.getSession();
-        setIsValid(!!session);
+        
+        if (session) {
+          setIsValid(true);
+        } else {
+          // If no session, try to parse the URL and handle the token
+          const hash = window.location.hash.slice(1);
+          if (hash.includes('access_token')) {
+            // Supabase should have handled this, but let's wait a moment
+            setTimeout(async () => {
+              const { data: { session } } = await supabase.auth.getSession();
+              setIsValid(!!session);
+            }, 500);
+          } else {
+            setIsValid(false);
+          }
+        }
       } catch (error) {
         console.error('Session check error:', error);
         setIsValid(false);
       }
     };
+    
     checkSession();
   }, []);
 
