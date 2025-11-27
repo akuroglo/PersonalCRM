@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLocation } from "wouter";
 import { Loader2 } from "lucide-react";
 
 export default function Auth() {
+  const [, setLocation] = useLocation();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -102,18 +104,32 @@ export default function Auth() {
             </Button>
           </form>
           
-          <div className="mt-4 text-center text-sm">
-            <span className="text-muted-foreground">
-              {isLogin ? "Нет аккаунта? " : "Уже есть аккаунт? "}
-            </span>
-            <Button
-              variant="ghost"
-              className="p-0 h-auto underline"
-              onClick={() => setIsLogin(!isLogin)}
-              data-testid="button-toggle-auth-mode"
-            >
-              {isLogin ? "Зарегистрироваться" : "Войти"}
-            </Button>
+          <div className="mt-4 space-y-3">
+            <div className="text-center text-sm">
+              <span className="text-muted-foreground">
+                {isLogin ? "Нет аккаунта? " : "Уже есть аккаунт? "}
+              </span>
+              <Button
+                variant="ghost"
+                className="p-0 h-auto underline"
+                onClick={() => setIsLogin(!isLogin)}
+                data-testid="button-toggle-auth-mode"
+              >
+                {isLogin ? "Зарегистрироваться" : "Войти"}
+              </Button>
+            </div>
+            {isLogin && (
+              <div className="text-center">
+                <Button
+                  variant="ghost"
+                  className="p-0 h-auto text-sm underline text-muted-foreground hover:text-foreground"
+                  onClick={() => setLocation("/forgot-password")}
+                  data-testid="button-forgot-password"
+                >
+                  Забыли пароль?
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

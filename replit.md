@@ -108,3 +108,34 @@ Preferred communication style: Simple, everyday language.
 - TypeScript for compile-time type checking
 - Zod for runtime validation
 - Shared schema definitions ensuring type consistency across the stack
+
+**Authentication & Security**:
+- Supabase Auth with email/password authentication
+- Multi-user support with user-specific contact isolation (userId foreign key)
+- Protected API routes with Bearer token validation
+- Password recovery functionality via Supabase email recovery
+- Session persistence with localStorage
+
+### Authentication Features
+
+**Login/Registration**:
+- Email/password signup with confirmation email
+- Secure login with session management
+- Automatic session persistence across browser restarts
+
+**Password Recovery**:
+- "Forgot Password" link on login page
+- Email verification with recovery token
+- Secure password reset page
+- Full workflow: Request email → Check email → Click recovery link → Set new password
+
+**Frontend Routes**:
+- `/` - Protected home page (contacts management)
+- `/auth` - Login/registration page
+- `/forgot-password` - Password recovery request page
+- `/reset-password` - Password reset page
+
+**API Endpoints** (all require Bearer token):
+- All `/api/contacts/*` endpoints protected with auth middleware
+- Tokens extracted from `Authorization: Bearer <token>` header
+- User ID extracted from token and used to scope database queries
