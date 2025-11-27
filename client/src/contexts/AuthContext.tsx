@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { getSupabase } from '@/lib/supabase';
+import { queryClient } from '@/lib/queryClient';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -29,6 +30,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
           setSession(session);
           setUser(session?.user ?? null);
+          // Очищаем кеш контактов при изменении пользователя
+          queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
         });
 
         setLoading(false);
@@ -72,6 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // Очищаем кеш перед разлогинированием
+    queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
     const supabase = await getSupabase();
     await supabase.auth.signOut();
   };
