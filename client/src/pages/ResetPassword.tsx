@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 
 export default function ResetPassword() {
   const [, setLocation] = useLocation();
@@ -17,13 +17,17 @@ export default function ResetPassword() {
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
+    const checkSession = async () => {
+      try {
+        const supabase = await getSupabase();
+        const { data: { session } } = await supabase.auth.getSession();
+        setIsValid(!!session);
+      } catch (error) {
+        console.error('Session check error:', error);
         setIsValid(false);
-      } else {
-        setIsValid(true);
       }
-    });
+    };
+    checkSession();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,6 +54,7 @@ export default function ResetPassword() {
     setLoading(true);
 
     try {
+      const supabase = await getSupabase();
       const { error } = await supabase.auth.updateUser({ password });
 
       if (error) {

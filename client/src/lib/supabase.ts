@@ -1,10 +1,32 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+let supabase: ReturnType<typeof createClient>;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
+const initSupabase = async () => {
+  if (supabase) return supabase;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  try {
+    const response = await fetch('/api/config');
+    const { supabaseUrl, supabaseAnonKey } = await response.json();
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Missing Supabase configuration');
+    }
+
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    return supabase;
+  } catch (error) {
+    console.error('Failed to initialize Supabase:', error);
+    throw error;
+  }
+};
+
+export const getSupabase = async () => {
+  if (!supabase) {
+    await initSupabase();
+  }
+  return supabase;
+};
+
+// For backward compatibility
+initSupabase().catch(console.error);

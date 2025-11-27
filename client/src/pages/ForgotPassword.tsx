@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { Loader2, ArrowLeft } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 
 export default function ForgotPassword() {
   const [, setLocation] = useLocation();
@@ -20,6 +20,7 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
+      const supabase = await getSupabase();
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth?type=recovery`,
       });

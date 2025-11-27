@@ -6,6 +6,14 @@ import { authMiddleware } from "./middleware/auth";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Config endpoint - returns Supabase configuration
+  app.get("/api/config", (_req, res) => {
+    res.json({
+      supabaseUrl: process.env.VITE_SUPABASE_URL,
+      supabaseAnonKey: process.env.VITE_SUPABASE_ANON_KEY,
+    });
+  });
+
   // Apply auth middleware to all /api/contacts routes
   app.use("/api/contacts", authMiddleware);
 

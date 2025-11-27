@@ -1,12 +1,17 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import { supabase } from "./supabase";
+import { getSupabase } from "./supabase";
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.access_token) {
-    return {
-      Authorization: `Bearer ${session.access_token}`,
-    };
+  try {
+    const supabase = await getSupabase();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      return {
+        Authorization: `Bearer ${session.access_token}`,
+      };
+    }
+  } catch (error) {
+    console.error('Error getting auth headers:', error);
   }
   return {};
 }
