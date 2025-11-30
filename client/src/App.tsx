@@ -9,6 +9,7 @@ import Auth from "@/pages/Auth";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import ChatPage from "@/pages/Chat";
+import SettingsPage from "@/pages/Settings";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 
@@ -35,6 +36,7 @@ function Router() {
     <Switch>
       <Route path="/" component={() => <ProtectedRoute component={Home} />} />
       <Route path="/chat" component={() => <ProtectedRoute component={ChatPage} />} />
+      <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
       <Route path="/auth" component={Auth} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />

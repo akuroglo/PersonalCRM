@@ -22,12 +22,11 @@ import {
   SidebarContent,
   SidebarHeader,
   SidebarFooter,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
   SidebarTrigger,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { 
   Plus, 
@@ -207,44 +206,51 @@ export default function ChatPage() {
           <SidebarContent>
             <SidebarGroup>
               <SidebarGroupContent>
-                <SidebarMenu>
+                <div className="space-y-1">
                   {chats.length === 0 ? (
                     <div className="text-center py-8 px-4 text-muted-foreground text-sm">
                       Нет чатов. Создайте первый!
                     </div>
                   ) : (
                     chats.map((chat) => (
-                      <SidebarMenuItem key={chat.id}>
-                        <SidebarMenuButton
-                          isActive={selectedChatId === chat.id}
-                          onClick={() => setSelectedChatId(chat.id)}
-                          data-testid={`chat-item-${chat.id}`}
-                          className="group"
+                      <div
+                        key={chat.id}
+                        className="group flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-colors hover-elevate"
+                        onClick={() => setSelectedChatId(chat.id)}
+                        data-testid={`chat-item-${chat.id}`}
+                      >
+                        <MessageSquare
+                          className={cn(
+                            "w-4 h-4 flex-shrink-0",
+                            selectedChatId === chat.id ? "text-primary" : "text-muted-foreground"
+                          )}
+                        />
+                        <div
+                          className={cn(
+                            "flex-1 min-w-0",
+                            selectedChatId === chat.id ? "text-primary" : ""
+                          )}
                         >
-                          <MessageSquare className="w-4 h-4 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{chat.title}</p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {getModelName(chat.model)}
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="opacity-0 group-hover:opacity-100 h-7 w-7 ml-auto"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteChatMutation.mutate(chat.id);
-                            }}
-                            data-testid={`button-delete-chat-${chat.id}`}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
+                          <p className="text-sm font-medium truncate">{chat.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {getModelName(chat.model)}
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteChatMutation.mutate(chat.id);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-1 hover-elevate rounded transition-opacity"
+                          data-testid={`button-delete-chat-${chat.id}`}
+                          title="Удалить чат"
+                        >
+                          <Trash2 className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                      </div>
                     ))
                   )}
-                </SidebarMenu>
+                </div>
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>

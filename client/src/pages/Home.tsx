@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { ContactCard } from "@/components/ContactCard";
 import { ContactForm } from "@/components/ContactForm";
 import { EmptyState } from "@/components/EmptyState";
-import { Plus, Search, LogOut, MessageSquare } from "lucide-react";
+import { Plus, Search, LogOut, MessageSquare, Settings } from "lucide-react";
 import { Link } from "wouter";
 import type { Contact, InsertContact } from "@shared/schema";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -151,6 +151,11 @@ export default function Home() {
             <span className="text-sm text-muted-foreground hidden sm:block" data-testid="text-user-email">
               {user?.email}
             </span>
+            <Link href="/settings">
+              <Button variant="ghost" size="icon" data-testid="link-settings" title="Настройки">
+                <Settings className="w-4 h-4" />
+              </Button>
+            </Link>
             <Link href="/chat">
               <Button variant="outline" data-testid="link-chat">
                 <MessageSquare className="w-4 h-4 mr-2" />
