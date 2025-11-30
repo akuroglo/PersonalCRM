@@ -26,6 +26,9 @@ export const chats = pgTable("chats", {
   title: text("title").notNull(),
   model: varchar("model").notNull(),
   enableWebSearch: boolean("enable_web_search").default(false).notNull(),
+  totalCost: decimal("total_cost", { precision: 10, scale: 6 }).default("0"),
+  totalTokens: integer("total_tokens").default(0),
+  messageCount: integer("message_count").default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

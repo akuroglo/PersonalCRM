@@ -53,8 +53,15 @@ Preferred communication style: Simple, everyday language in Russian.
 **Schema**:
 - `users` - Supabase Auth users
 - `contacts` - Contact information with reminders
-- `chats` - AI conversation threads
-- `messages` - Chat messages (user + assistant)
+- `chats` - AI conversation threads with cost tracking:
+  - `totalCost` (decimal) - Accumulated cost in USD for the chat
+  - `totalTokens` (integer) - Total tokens used in the chat
+  - `messageCount` (integer) - Number of assistant messages
+  - `enableWebSearch` (boolean) - Web search enabled for chat
+- `messages` - Chat messages with analytics:
+  - `inputTokens`, `outputTokens` (integer) - Token counts per message
+  - `costUsd` (decimal) - Cost per message in USD
+  - `webSearchUsed` (boolean) - Whether web search was used
 
 ### Design System (ClickUp Style)
 
@@ -74,6 +81,15 @@ Preferred communication style: Simple, everyday language in Russian.
 2. **AI Chat System** with multi-model support
 3. **Model Selection** with pricing display
 4. **Web Search** capability for supported models
+5. **Cost Tracking** - Real-time tracking per chat and per message:
+   - Each message records input/output tokens and cost
+   - Each chat accumulates total cost and tokens
+   - Cost displayed in chat list sidebar and header
+6. **Analytics Page** (/analytics) - Comprehensive spending overview:
+   - Total cost across all chats
+   - Total messages and tokens
+   - Web search usage count
+   - Cost breakdown by AI model
 
 ### AI Models Available (Top 10)
 1. **GPT-4o** ($5 input / $15 output) - OpenAI, most capable
@@ -119,11 +135,14 @@ Preferred communication style: Simple, everyday language in Russian.
 - `DELETE /api/contacts/:id` - Delete contact
 
 ### Chats
-- `GET /api/chats` - List all chats
+- `GET /api/chats` - List all chats (includes totalCost, totalTokens, messageCount)
 - `POST /api/chats` - Create chat (requires model selection)
 - `GET /api/chats/:id` - Get chat with messages
 - `DELETE /api/chats/:id` - Delete chat
-- `POST /api/chats/:id/messages` - Send message and get AI response
+- `POST /api/chats/:id/messages` - Send message and get AI response (records cost/tokens)
+
+### Analytics
+- `GET /api/analytics` - User's spending analytics (totalCostUsd, totalMessages, totalTokens, webSearchCount, costByModel)
 
 ## External Dependencies
 
@@ -146,6 +165,13 @@ Preferred communication style: Simple, everyday language in Russian.
 3. **Web Search Integration**: Added checkbox toggle for web search capability (+$0.02 per request)
 4. **Pricing Display**: Shows input/output costs per 1M tokens in model selection
 5. **Model Details**: Display provider, description, context window size
+6. **Comprehensive Cost Tracking**: 
+   - Messages store inputTokens, outputTokens, costUsd, webSearchUsed
+   - Chats accumulate totalCost, totalTokens, messageCount
+   - Cost displayed in sidebar next to each chat
+   - Cost displayed in chat header
+7. **Analytics Page**: Full spending analytics at /analytics with model breakdown
+8. **Console Logging**: Backend logs each AI request with model, tokens, cost for debugging
 
 ## Technical Stack Summary
 
@@ -170,9 +196,10 @@ Preferred communication style: Simple, everyday language in Russian.
 ## Future Enhancement Ideas
 
 - Advanced model comparison in UI
-- Token usage tracking and cost monitoring
 - Chat history export
 - Model recommendation based on task type
 - Streaming responses with real-time display
 - File upload support for documents
 - Custom system prompts per chat
+- Daily/weekly cost limits and alerts
+- Cost prediction before sending message

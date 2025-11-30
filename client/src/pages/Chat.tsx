@@ -229,43 +229,51 @@ export default function ChatPage() {
                       Нет чатов. Создайте первый!
                     </div>
                   ) : (
-                    chats.map((chat) => (
-                      <div
-                        key={chat.id}
-                        className="group flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-colors hover-elevate"
-                        onClick={() => setSelectedChatId(chat.id)}
-                        data-testid={`chat-item-${chat.id}`}
-                      >
-                        <MessageSquare
-                          className={cn(
-                            "w-4 h-4 flex-shrink-0",
-                            selectedChatId === chat.id ? "text-primary" : "text-muted-foreground"
-                          )}
-                        />
+                    chats.map((chat) => {
+                      const chatCost = parseFloat(chat.totalCost?.toString() || "0");
+                      return (
                         <div
-                          className={cn(
-                            "flex-1 min-w-0",
-                            selectedChatId === chat.id ? "text-primary" : ""
-                          )}
+                          key={chat.id}
+                          className="group flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-colors hover-elevate"
+                          onClick={() => setSelectedChatId(chat.id)}
+                          data-testid={`chat-item-${chat.id}`}
                         >
-                          <p className="text-sm font-medium truncate">{chat.title}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {getModelName(chat.model)}
-                          </p>
+                          <MessageSquare
+                            className={cn(
+                              "w-4 h-4 flex-shrink-0",
+                              selectedChatId === chat.id ? "text-primary" : "text-muted-foreground"
+                            )}
+                          />
+                          <div
+                            className={cn(
+                              "flex-1 min-w-0",
+                              selectedChatId === chat.id ? "text-primary" : ""
+                            )}
+                          >
+                            <p className="text-sm font-medium truncate">{chat.title}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span className="truncate">{getModelName(chat.model)}</span>
+                              {chatCost > 0 && (
+                                <span className="flex-shrink-0 text-primary/70">
+                                  ${chatCost.toFixed(4)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteChatMutation.mutate(chat.id);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-1 hover-elevate rounded transition-opacity"
+                            data-testid={`button-delete-chat-${chat.id}`}
+                            title="Удалить чат"
+                          >
+                            <Trash2 className="w-4 h-4 text-muted-foreground" />
+                          </button>
                         </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteChatMutation.mutate(chat.id);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 p-1 hover-elevate rounded transition-opacity"
-                          data-testid={`button-delete-chat-${chat.id}`}
-                          title="Удалить чат"
-                        >
-                          <Trash2 className="w-4 h-4 text-muted-foreground" />
-                        </button>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </SidebarGroupContent>
@@ -288,6 +296,17 @@ export default function ChatPage() {
                 <span className="text-sm text-muted-foreground">
                   {getModelName(currentChat.model)}
                 </span>
+                {currentChat.enableWebSearch && (
+                  <span className="flex items-center gap-1 text-xs text-primary/70">
+                    <Globe className="w-3 h-3" />
+                    Web
+                  </span>
+                )}
+                {parseFloat(currentChat.totalCost?.toString() || "0") > 0 && (
+                  <span className="text-sm font-medium text-primary" data-testid="text-chat-cost">
+                    ${parseFloat(currentChat.totalCost?.toString() || "0").toFixed(4)}
+                  </span>
+                )}
               </>
             )}
           </header>

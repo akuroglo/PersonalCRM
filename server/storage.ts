@@ -113,73 +113,104 @@ export class DbStorage implements IStorage {
 
   async createMessage(message: InsertMessage & { costUsd?: number | string }): Promise<Message> {
     const { costUsd, ...messageData } = message;
+    const costValue = costUsd ? parseFloat(costUsd.toString()) : 0;
+    const tokenCount = (messageData.inputTokens || 0) + (messageData.outputTokens || 0);
+    
     const result = await db.insert(messages).values({
       ...messageData,
-      costUsd: costUsd ? costUsd.toString() : "0"
+      costUsd: costValue.toString()
     } as any).returning();
-    await db.update(chats)
-      .set({ updatedAt: new Date() })
-      .where(eq(chats.id, messageData.chatId));
+    
+    // Update chat totals for assistant messages (which have cost)
+    if (messageData.role === "assistant") {
+      const chat = await db.select().from(chats).where(eq(chats.id, messageData.chatId));
+      if (chat[0]) {
+        const currentCost = parseFloat(chat[0].totalCost?.toString() || "0");
+        const currentTokens = chat[0].totalTokens || 0;
+        const currentCount = chat[0].messageCount || 0;
+        
+        await db.update(chats)
+          .set({ 
+            updatedAt: new Date(),
+            totalCost: (currentCost + costValue).toString(),
+            totalTokens: currentTokens + tokenCount,
+            messageCount: currentCount + 1,
+          })
+          .where(eq(chats.id, messageData.chatId));
+      }
+    } else {
+      await db.update(chats)
+        .set({ updatedAt: new Date() })
+        .where(eq(chats.id, messageData.chatId));
+    }
+    
     return result[0];
   }
 
   async getUserAnalytics(userId: string): Promise<UserAnalytics> {
-    // Get all chats for user
+    const emptyResult: UserAnalytics = {
+      totalCostUsd: 0,
+      totalMessages: 0,
+      totalTokens: 0,
+      webSearchCount: 0,
+      chatCount: 0,
+      costByModel: {},
+    };
+
+    // Return empty if no userId
+    if (!userId) {
+      return emptyResult;
+    }
+
+    // Get all chats for user with their accumulated totals
     const userChats = await db.select().from(chats).where(eq(chats.userId, userId));
 
     if (userChats.length === 0) {
-      return {
-        totalCostUsd: 0,
-        totalMessages: 0,
-        totalTokens: 0,
-        webSearchCount: 0,
-        chatCount: 0,
-        costByModel: {},
-      };
+      return emptyResult;
     }
 
-    // Get all assistant messages for these chats
-    const chatIds = userChats.map(c => c.id);
-    const assistantMessages = await db.select().from(messages)
-      .where(and(
-        eq(messages.role, "assistant"),
-        chatIds.length > 0 ? inArray(messages.chatId, chatIds) : undefined
-      ));
-
-    // Aggregate analytics
+    // Aggregate from chat totals (faster than querying all messages)
     let totalCostUsd = 0;
     let totalTokens = 0;
-    let webSearchCount = 0;
+    let totalMessages = 0;
     const costByModel: Record<string, number> = {};
 
-    for (const msg of assistantMessages) {
-      const chat = userChats.find(c => c.id === msg.chatId);
-      if (!chat) continue;
-
-      const cost = msg.costUsd ? parseFloat(msg.costUsd.toString()) : 0;
-      totalCostUsd += cost;
-      totalTokens += (msg.inputTokens || 0) + (msg.outputTokens || 0);
-      
-      if (msg.webSearchUsed) {
-        webSearchCount++;
-      }
+    for (const chat of userChats) {
+      const chatCost = parseFloat(chat.totalCost?.toString() || "0");
+      totalCostUsd += chatCost;
+      totalTokens += chat.totalTokens || 0;
+      totalMessages += chat.messageCount || 0;
 
       if (!costByModel[chat.model]) {
         costByModel[chat.model] = 0;
       }
-      costByModel[chat.model] += cost;
+      costByModel[chat.model] += chatCost;
+    }
+
+    // Count web search usage from messages (single efficient query)
+    const chatIds = userChats.map(c => c.id).filter(Boolean);
+    let webSearchCount = 0;
+    
+    if (chatIds.length > 0) {
+      const webSearchMessages = await db.select().from(messages)
+        .where(and(
+          eq(messages.role, "assistant"),
+          eq(messages.webSearchUsed, true),
+          inArray(messages.chatId, chatIds as [string, ...string[]])
+        ));
+      webSearchCount = webSearchMessages.length;
     }
 
     return {
-      totalCostUsd: Math.round(totalCostUsd * 10000) / 10000,
-      totalMessages: assistantMessages.length,
+      totalCostUsd: Math.round(totalCostUsd * 1000000) / 1000000,
+      totalMessages,
       totalTokens,
       webSearchCount,
       chatCount: userChats.length,
       costByModel: Object.fromEntries(
         Object.entries(costByModel)
-          .filter(([, v]) => v > 0 || Object.keys(costByModel).length > 0)
-          .map(([k, v]) => [k, Math.round(v * 10000) / 10000])
+          .filter(([, v]) => v > 0)
+          .map(([k, v]) => [k, Math.round(v * 1000000) / 1000000])
       ),
     };
   }
