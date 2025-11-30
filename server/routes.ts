@@ -218,6 +218,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         chat.enableWebSearch
       );
 
+      console.log(`[ANALYTICS] Chat: ${req.params.id}, Model: ${chat.model}, Input: ${aiResponseData.inputTokens}, Output: ${aiResponseData.outputTokens}, Cost: $${aiResponseData.costUsd.toFixed(6)}, WebSearch: ${chat.enableWebSearch}`);
+
       // Save AI response with token usage and cost
       const assistantMessage = await storage.createMessage({
         chatId: req.params.id,

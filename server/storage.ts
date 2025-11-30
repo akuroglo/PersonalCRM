@@ -4,7 +4,7 @@ import {
   type Message, type InsertMessage, messages
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray } from "drizzle-orm";
 
 export interface UserAnalytics {
   totalCostUsd: number;
@@ -126,9 +126,8 @@ export class DbStorage implements IStorage {
   async getUserAnalytics(userId: string): Promise<UserAnalytics> {
     // Get all chats for user
     const userChats = await db.select().from(chats).where(eq(chats.userId, userId));
-    const chatIds = userChats.map(c => c.id);
 
-    if (chatIds.length === 0) {
+    if (userChats.length === 0) {
       return {
         totalCostUsd: 0,
         totalMessages: 0,
@@ -139,9 +138,13 @@ export class DbStorage implements IStorage {
       };
     }
 
-    // Get all messages for these chats (excluding user messages which have no cost)
-    const userMessages = await db.select().from(messages)
-      .where(eq(messages.role, "assistant"));
+    // Get all assistant messages for these chats
+    const chatIds = userChats.map(c => c.id);
+    const assistantMessages = await db.select().from(messages)
+      .where(and(
+        eq(messages.role, "assistant"),
+        chatIds.length > 0 ? inArray(messages.chatId, chatIds) : undefined
+      ));
 
     // Aggregate analytics
     let totalCostUsd = 0;
@@ -149,36 +152,34 @@ export class DbStorage implements IStorage {
     let webSearchCount = 0;
     const costByModel: Record<string, number> = {};
 
-    for (const chat of userChats) {
-      const chatMessages = userMessages.filter(m => m.chatId === chat.id);
-      for (const msg of chatMessages) {
-        if (msg.costUsd) {
-          totalCostUsd += parseFloat(msg.costUsd.toString());
-        }
-        totalTokens += (msg.inputTokens || 0) + (msg.outputTokens || 0);
-        if (msg.webSearchUsed) {
-          webSearchCount++;
-        }
-        if (!costByModel[chat.model]) {
-          costByModel[chat.model] = 0;
-        }
-        if (msg.costUsd) {
-          costByModel[chat.model] += parseFloat(msg.costUsd.toString());
-        }
+    for (const msg of assistantMessages) {
+      const chat = userChats.find(c => c.id === msg.chatId);
+      if (!chat) continue;
+
+      const cost = msg.costUsd ? parseFloat(msg.costUsd.toString()) : 0;
+      totalCostUsd += cost;
+      totalTokens += (msg.inputTokens || 0) + (msg.outputTokens || 0);
+      
+      if (msg.webSearchUsed) {
+        webSearchCount++;
       }
+
+      if (!costByModel[chat.model]) {
+        costByModel[chat.model] = 0;
+      }
+      costByModel[chat.model] += cost;
     }
 
     return {
-      totalCostUsd: Math.round(totalCostUsd * 10000) / 10000, // Round to 4 decimals
-      totalMessages: userMessages.length,
+      totalCostUsd: Math.round(totalCostUsd * 10000) / 10000,
+      totalMessages: assistantMessages.length,
       totalTokens,
       webSearchCount,
       chatCount: userChats.length,
       costByModel: Object.fromEntries(
-        Object.entries(costByModel).map(([k, v]) => [
-          k,
-          Math.round(v * 10000) / 10000
-        ])
+        Object.entries(costByModel)
+          .filter(([, v]) => v > 0 || Object.keys(costByModel).length > 0)
+          .map(([k, v]) => [k, Math.round(v * 10000) / 10000])
       ),
     };
   }
