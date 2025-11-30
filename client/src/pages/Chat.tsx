@@ -37,6 +37,7 @@ import {
   Loader2,
   Bot,
   User,
+  Globe,
 } from "lucide-react";
 import type { Chat, Message } from "@shared/schema";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -49,6 +50,11 @@ import { cn } from "@/lib/utils";
 interface Model {
   id: string;
   name: string;
+  provider: string;
+  pricing: { input: number; output: number };
+  supportsWebSearch: boolean;
+  description: string;
+  contextWindow?: number;
 }
 
 interface ChatWithMessages extends Chat {
@@ -61,6 +67,7 @@ export default function ChatPage() {
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [newChatTitle, setNewChatTitle] = useState("");
   const [newChatModel, setNewChatModel] = useState("openai/gpt-4o-mini");
+  const [enableWebSearch, setEnableWebSearch] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -162,6 +169,16 @@ export default function ChatPage() {
   const getModelName = (modelId: string) => {
     const model = models.find(m => m.id === modelId);
     return model?.name || modelId;
+  };
+
+  const getCurrentModel = () => {
+    return models.find(m => m.id === newChatModel);
+  };
+
+  const formatPrice = (price: number) => {
+    if (price === 0) return "Free";
+    if (price < 1) return `$${(price * 1000).toFixed(2)}/1K`;
+    return `$${price.toFixed(2)}/1M`;
   };
 
   const sidebarStyle = {
@@ -414,15 +431,58 @@ export default function ChatPage() {
                 <SelectTrigger data-testid="select-model">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-96">
                   {models.map((model) => (
                     <SelectItem key={model.id} value={model.id}>
-                      {model.name}
+                      <div className="flex items-center gap-2">
+                        <span>{model.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          ({formatPrice(model.pricing.input)})
+                        </span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {getCurrentModel() && (
+                <div className="p-3 bg-muted rounded-lg border border-border text-sm space-y-2">
+                  <p><strong>{getCurrentModel()?.provider}</strong> • {getCurrentModel()?.description}</p>
+                  <div className="flex gap-3 flex-wrap text-xs">
+                    <div>
+                      <p className="text-muted-foreground">Input</p>
+                      <p className="font-medium">{formatPrice(getCurrentModel()?.pricing.input || 0)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Output</p>
+                      <p className="font-medium">{formatPrice(getCurrentModel()?.pricing.output || 0)}</p>
+                    </div>
+                    {getCurrentModel()?.contextWindow && (
+                      <div>
+                        <p className="text-muted-foreground">Context</p>
+                        <p className="font-medium">{(getCurrentModel()?.contextWindow || 0) / 1000}K</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
+            {getCurrentModel()?.supportsWebSearch && (
+              <div className="flex items-center gap-2 p-3 bg-muted rounded-lg border border-border">
+                <input
+                  type="checkbox"
+                  id="web-search"
+                  checked={enableWebSearch}
+                  onChange={(e) => setEnableWebSearch(e.target.checked)}
+                  className="rounded"
+                  data-testid="checkbox-web-search"
+                />
+                <label htmlFor="web-search" className="text-sm font-medium flex-1 cursor-pointer flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-primary" />
+                  Включить веб-поиск
+                  <span className="text-xs text-muted-foreground">(+$0.02/запрос)</span>
+                </label>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button

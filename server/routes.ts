@@ -90,9 +90,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Chat routes
   app.use("/api/chats", authMiddleware);
 
-  // Get available models
+  // Get available models with pricing and capabilities
   app.get("/api/models", (_req, res) => {
-    res.json(AVAILABLE_MODELS);
+    res.json(AVAILABLE_MODELS.map(model => ({
+      id: model.id,
+      name: model.name,
+      provider: model.provider,
+      pricing: model.pricing,
+      supportsWebSearch: model.supportsWebSearch,
+      description: model.description,
+      contextWindow: model.contextWindow,
+    })));
   });
 
   // Get all chats

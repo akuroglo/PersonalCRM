@@ -1,12 +1,12 @@
-# Personal CRM Application
+# Personal CRM Application - Russian Edition
 
 ## Overview
 
-This is a Personal CRM (Customer Relationship Management) application designed to help users manage their contacts and set reminders for maintaining relationships. The application features a clean, minimalist interface inspired by Apple's Human Interface Guidelines, focusing on productivity and usability. Users can add contacts with details like names, birthdays, and custom reminder intervals, then track when to reach out to maintain connections.
+Personal CRM system in Russian for managing contacts and AI chat conversations with all data stored in Supabase. Features OpenRouter AI integration with support for 10 popular models including web search capability. Design: ClickUp style (purple theme, modern professional interface).
 
 ## User Preferences
 
-Preferred communication style: Simple, everyday language.
+Preferred communication style: Simple, everyday language in Russian.
 
 ## System Architecture
 
@@ -14,13 +14,12 @@ Preferred communication style: Simple, everyday language.
 
 **Framework**: React with TypeScript using Vite as the build tool and development server.
 
-**UI Component Library**: shadcn/ui components built on top of Radix UI primitives, providing accessible and customizable components following the "new-york" style variant.
+**UI Component Library**: shadcn/ui components built on top of Radix UI primitives.
 
 **Styling**: 
-- Tailwind CSS for utility-first styling with custom theme extensions
-- Design system following Apple Human Interface Guidelines emphasizing clarity, minimalism, and content-first hierarchy
+- Tailwind CSS with ClickUp-inspired purple theme (268° hue)
+- Design system following ClickUp principles: professional clarity, structured information hierarchy
 - Custom CSS variables for theming with support for light/dark modes
-- System font stack prioritizing native platform fonts
 
 **State Management**:
 - TanStack Query (React Query) for server state management, data fetching, and caching
@@ -29,113 +28,151 @@ Preferred communication style: Simple, everyday language.
 
 **Routing**: Wouter for lightweight client-side routing.
 
-**Type Safety**: Full TypeScript implementation with strict mode enabled, shared types between frontend and backend via the `@shared` directory.
+**Type Safety**: Full TypeScript implementation with strict mode enabled.
 
 ### Backend Architecture
 
 **Runtime**: Node.js with Express.js framework.
 
-**API Design**: RESTful API with the following endpoints:
-- `GET /api/contacts` - Retrieve all contacts
-- `GET /api/contacts/:id` - Retrieve single contact
-- `POST /api/contacts` - Create new contact
-- `PUT /api/contacts/:id` - Update existing contact
-- `DELETE /api/contacts/:id` - Delete contact
+**API Design**: RESTful API with endpoints for:
+- `/api/contacts/*` - Contact management
+- `/api/chats/*` - Chat and message operations
+- `/api/models` - AI model listings with pricing and capabilities
+- `/api/config` - Supabase configuration
 
-**Validation**: Zod schemas for runtime type validation and data parsing, shared between client and server.
+**Validation**: Zod schemas for runtime type validation.
 
-**Development vs Production**:
-- Development mode uses Vite middleware for HMR (Hot Module Replacement)
-- Production mode serves pre-built static assets from the `dist/public` directory
-- Separate entry points (`index-dev.ts` and `index-prod.ts`) for different environments
+**AI Integration**: OpenRouter via Replit AI Integrations with automatic key management.
 
 ### Data Storage
 
 **ORM**: Drizzle ORM for type-safe database operations.
 
-**Database Schema**: PostgreSQL with a single `contacts` table containing:
-- `id` - UUID primary key (auto-generated)
-- `name` - Text field for contact name (required)
-- `birthday` - Date field for birthday (optional)
-- `last_contact` - Date field for last interaction (required)
-- `reminder_interval` - Integer field for days between reminders (required)
+**Database**: Supabase PostgreSQL (Session Pooler - port 6543)
 
-**Database Access Pattern**: Repository pattern implemented via the `DbStorage` class, providing an interface (`IStorage`) for data operations and abstracting database implementation details.
+**Schema**:
+- `users` - Supabase Auth users
+- `contacts` - Contact information with reminders
+- `chats` - AI conversation threads
+- `messages` - Chat messages (user + assistant)
 
-### Design System
+### Design System (ClickUp Style)
 
-**Visual Hierarchy**:
-- Typography scale from 13px captions to 32px page titles
-- System font stack for native platform feel
-- Generous whitespace with Tailwind spacing units (2, 3, 4, 6, 8, 12)
-- Maximum content width of `max-w-6xl` for readability
+**Color Scheme**:
+- Primary: Purple (268° 100% 45% light / 55% dark)
+- Professional, modern aesthetic
+- Full light/dark mode support
 
-**Component Patterns**:
-- Card-based layouts with rounded corners (`rounded-xl`)
-- Elevation through subtle shadows and borders
-- Hover and active states for interactive feedback
-- Responsive design considerations with mobile breakpoint at 768px
+**Typography**: System font stack with 5-6 font weights
 
-**Color System**:
-- HSL-based color tokens supporting both light and dark themes
-- CSS custom properties for runtime theming
-- Semantic color naming (primary, secondary, muted, accent, destructive)
-- Outline borders using alpha-based transparency
+**Components**: Card-based layouts, sidebar navigation, modern form design
 
-### External Dependencies
+## Features Implemented
 
-**Database Service**: 
-- Neon Serverless PostgreSQL via `@neondatabase/serverless` package
-- Connection pooling for efficient database access
-- Configured via `DATABASE_URL` environment variable
+### Core Features
+1. **Contact Management** (CRUD with reminder tracking)
+2. **AI Chat System** with multi-model support
+3. **Model Selection** with pricing display
+4. **Web Search** capability for supported models
 
-**UI Component Libraries**:
-- Radix UI primitives for accessible component foundations (dialogs, dropdowns, popovers, etc.)
-- Lucide React for consistent iconography
-- date-fns for date manipulation and formatting with Russian locale support
+### AI Models Available (Top 10)
+1. **GPT-4o** ($5 input / $15 output) - OpenAI, most capable
+2. **Claude 3.5 Sonnet** ($3 / $15) - Anthropic, excellent reasoning
+3. **GPT-4o Mini** ($0.15 / $0.60) - OpenAI, fast & efficient
+4. **Gemini 2.0 Flash** ($0.075 / $0.30) - Google, very fast
+5. **Claude 3 Haiku** ($0.25 / $1.25) - Anthropic, budget-friendly
+6. **Llama 3.3 70B** ($0.65 / $2.60) - Meta, open-source
+7. **Mistral Large** ($2.7 / $8.1) - Mistral AI, strong reasoning
+8. **DeepSeek Chat** (Free) - DeepSeek, cost-effective
+9. **Qwen 2.5 72B** ($0.65 / $2.60) - Alibaba, multilingual
+10. **Gemini 1.5 Flash** ($0.075 / $0.30) - Google, large context
 
-**Development Tools**:
-- Replit-specific plugins for development (cartographer, dev banner, runtime error overlay)
-- Drizzle Kit for database migrations
-- ESBuild for production bundling
-- PostCSS with Autoprefixer for CSS processing
+### Web Search Feature
+- Available on all 10 models via `:online` suffix
+- Engine: Exa or native provider search
+- Cost: $4 per 1,000 results (~$0.02 per request with default 5 results)
+- Checkbox toggle in chat creation dialog
 
-**Form Handling**:
-- React Hook Form for performant form state management
-- Hookform Resolvers for integrating Zod validation schemas
+### Authentication
+- Supabase Auth with email/password
+- Multi-user support with userId isolation
+- Password recovery via email
+- Session persistence
 
-**Quality Assurance**:
-- TypeScript for compile-time type checking
-- Zod for runtime validation
-- Shared schema definitions ensuring type consistency across the stack
+### UI Features
+- Sidebar navigation with collapsible chat list
+- Model selection dropdown with pricing display
+- Input/Output token pricing shown in USD/1M tokens
+- Context window information
+- Web search toggle when supported
+- Modern ClickUp-style interface with purple accent
 
-**Authentication & Security**:
-- Supabase Auth with email/password authentication
-- Multi-user support with user-specific contact isolation (userId foreign key)
-- Protected API routes with Bearer token validation
-- Password recovery functionality via Supabase email recovery
-- Session persistence with localStorage
+## API Endpoints
 
-### Authentication Features
+### Models
+- `GET /api/models` - Returns all 10 models with pricing, provider, capabilities
 
-**Login/Registration**:
-- Email/password signup with confirmation email
-- Secure login with session management
-- Automatic session persistence across browser restarts
+### Contacts
+- `GET /api/contacts` - List all user contacts
+- `POST /api/contacts` - Create contact
+- `PUT /api/contacts/:id` - Update contact
+- `DELETE /api/contacts/:id` - Delete contact
 
-**Password Recovery**:
-- "Forgot Password" link on login page
-- Email verification with recovery token
-- Secure password reset page
-- Full workflow: Request email → Check email → Click recovery link → Set new password
+### Chats
+- `GET /api/chats` - List all chats
+- `POST /api/chats` - Create chat (requires model selection)
+- `GET /api/chats/:id` - Get chat with messages
+- `DELETE /api/chats/:id` - Delete chat
+- `POST /api/chats/:id/messages` - Send message and get AI response
 
-**Frontend Routes**:
-- `/` - Protected home page (contacts management)
-- `/auth` - Login/registration page
-- `/forgot-password` - Password recovery request page
-- `/reset-password` - Password reset page
+## External Dependencies
 
-**API Endpoints** (all require Bearer token):
-- All `/api/contacts/*` endpoints protected with auth middleware
-- Tokens extracted from `Authorization: Bearer <token>` header
-- User ID extracted from token and used to scope database queries
+**Database**: Supabase PostgreSQL with Neon-backed connection pooling
+
+**AI Service**: 
+- OpenRouter via Replit AI Integrations
+- Automatic API key management
+- Billing through Replit credits
+- No data used for training (privacy-first)
+
+**UI**: Radix UI primitives, Lucide React icons
+
+**Forms**: React Hook Form + Zod validation
+
+## Recent Changes (Latest Session)
+
+1. **Migrated to ClickUp Design**: Updated color scheme from blue (211°) to purple (268°) theme
+2. **Added Top 10 Models**: Implemented list of most popular OpenRouter models with real pricing
+3. **Web Search Integration**: Added checkbox toggle for web search capability (+$0.02 per request)
+4. **Pricing Display**: Shows input/output costs per 1M tokens in model selection
+5. **Model Details**: Display provider, description, context window size
+
+## Technical Stack Summary
+
+- **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS
+- **Backend**: Express.js + Node.js + TypeScript
+- **Database**: Supabase PostgreSQL (Drizzle ORM)
+- **Authentication**: Supabase Auth
+- **AI**: OpenRouter (10 models) via Replit Integrations
+- **UI Components**: shadcn/ui (Radix UI)
+- **State Management**: TanStack Query + React Hooks
+- **Routing**: Wouter
+- **Validation**: Zod
+- **Icons**: Lucide React
+
+## Deployment
+
+- Replit (single deployment)
+- PostgreSQL: Supabase (Session Pooler)
+- AI API: OpenRouter through Replit
+- All data encrypted and user-scoped
+
+## Future Enhancement Ideas
+
+- Advanced model comparison in UI
+- Token usage tracking and cost monitoring
+- Chat history export
+- Model recommendation based on task type
+- Streaming responses with real-time display
+- File upload support for documents
+- Custom system prompts per chat
