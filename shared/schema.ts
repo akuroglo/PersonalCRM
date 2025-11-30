@@ -55,7 +55,6 @@ export const messages = pgTable("messages", {
 export const insertMessageSchema = createInsertSchema(messages).omit({
   id: true,
   createdAt: true,
-  costUsd: true,
 });
 
 export type InsertMessage = z.infer<typeof insertMessageSchema>;

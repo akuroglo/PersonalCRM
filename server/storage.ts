@@ -111,11 +111,15 @@ export class DbStorage implements IStorage {
       .orderBy(messages.createdAt);
   }
 
-  async createMessage(insertMessage: InsertMessage): Promise<Message> {
-    const result = await db.insert(messages).values(insertMessage).returning();
+  async createMessage(message: InsertMessage & { costUsd?: number | string }): Promise<Message> {
+    const { costUsd, ...messageData } = message;
+    const result = await db.insert(messages).values({
+      ...messageData,
+      costUsd: costUsd ? costUsd.toString() : "0"
+    } as any).returning();
     await db.update(chats)
       .set({ updatedAt: new Date() })
-      .where(eq(chats.id, insertMessage.chatId));
+      .where(eq(chats.id, messageData.chatId));
     return result[0];
   }
 

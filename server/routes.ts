@@ -225,6 +225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content: aiResponseData.content,
         inputTokens: aiResponseData.inputTokens,
         outputTokens: aiResponseData.outputTokens,
+        costUsd: aiResponseData.costUsd as any,
         webSearchUsed: chat.enableWebSearch,
       });
 
