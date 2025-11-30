@@ -173,6 +173,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Apply auth middleware to analytics
+  app.use("/api/analytics", authMiddleware);
+
   // Get user analytics (total spending)
   app.get("/api/analytics", async (req, res) => {
     try {
