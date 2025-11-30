@@ -62,18 +62,20 @@ export default function SettingsPage() {
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold" data-testid="text-openrouter-title">
-                      OpenRouter AI
+                      OpenRouter AI (Multi-Model)
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Доступ к множеству моделей ИИ через OpenRouter
+                      Доступ к множеству моделей ИИ (GPT-4, Claude, Llama и другие)
                     </p>
                     <div className="mt-3 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
                       <p className="text-sm font-medium text-green-900 dark:text-green-100">
-                        ✓ Интеграция активна
+                        ✓ Интеграция настроена автоматически
                       </p>
-                      <p className="text-xs text-green-800 dark:text-green-200 mt-1">
-                        Ключи управляются автоматически через Replit. Бильинг через Replit credits.
-                      </p>
+                      <div className="text-xs text-green-800 dark:text-green-200 mt-2 space-y-1">
+                        <p><strong>API ключ:</strong> Управляется Replit AI Integrations</p>
+                        <p><strong>Бильинг:</strong> Через Replit credits (не требует ввода ключа)</p>
+                        <p><strong>Статус:</strong> Готов к использованию</p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -96,9 +98,11 @@ export default function SettingsPage() {
                       <p className="text-sm font-medium text-green-900 dark:text-green-100">
                         ✓ Подключено
                       </p>
-                      <p className="text-xs text-green-800 dark:text-green-200 mt-1">
-                        Все контакты, чаты и сообщения хранятся в защищённой базе данных Supabase.
-                      </p>
+                      <div className="text-xs text-green-800 dark:text-green-200 mt-2 space-y-1">
+                        <p><strong>Хранилище:</strong> PostgreSQL (Supabase)</p>
+                        <p><strong>Аутентификация:</strong> Email + пароль через Supabase Auth</p>
+                        <p><strong>Данные:</strong> Все контакты, чаты и сообщения в защищённой БД</p>
+                      </div>
                     </div>
                   </div>
                 </div>
