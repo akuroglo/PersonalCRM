@@ -200,8 +200,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content: m.content,
       }));
 
-      // Generate AI response
-      const aiResponse = await generateChatResponse(messagesForAI, chat.model);
+      // Generate AI response with web search enabled if configured
+      const aiResponse = await generateChatResponse(
+        messagesForAI,
+        chat.model,
+        chat.enableWebSearch
+      );
 
       // Save AI response
       const assistantMessage = await storage.createMessage({

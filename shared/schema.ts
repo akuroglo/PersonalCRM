@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, date, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, date, integer, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -25,6 +25,7 @@ export const chats = pgTable("chats", {
   userId: varchar("user_id").notNull(),
   title: text("title").notNull(),
   model: varchar("model").notNull(),
+  enableWebSearch: boolean("enable_web_search").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

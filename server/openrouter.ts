@@ -123,9 +123,12 @@ export async function generateChatResponse(
   enableWebSearch: boolean = false
 ): Promise<string> {
   try {
-    const modelId = enableWebSearch && model.includes(":") === false 
+    // Add :online suffix for web search if enabled and not already present
+    const modelId = enableWebSearch && !model.includes(":online")
       ? `${model}:online` 
       : model;
+
+    console.log(`Generating response with model: ${modelId}, web search: ${enableWebSearch}`);
 
     const response = await openrouter.chat.completions.create({
       model: modelId,
@@ -145,7 +148,7 @@ export async function generateStreamingResponse(
   model: string = "openai/gpt-4o-mini",
   enableWebSearch: boolean = false
 ) {
-  const modelId = enableWebSearch && model.includes(":") === false 
+  const modelId = enableWebSearch && !model.includes(":online")
     ? `${model}:online` 
     : model;
 

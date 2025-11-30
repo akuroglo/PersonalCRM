@@ -86,7 +86,7 @@ export default function ChatPage() {
   });
 
   const createChatMutation = useMutation({
-    mutationFn: (data: { title: string; model: string }) =>
+    mutationFn: (data: { title: string; model: string; enableWebSearch: boolean }) =>
       apiRequest("POST", "/api/chats", data),
     onSuccess: async (response) => {
       const newChat = await response.json();
@@ -151,7 +151,7 @@ export default function ChatPage() {
 
   const handleCreateChat = () => {
     if (!newChatTitle.trim()) return;
-    createChatMutation.mutate({ title: newChatTitle, model: newChatModel });
+    createChatMutation.mutate({ title: newChatTitle, model: newChatModel, enableWebSearch });
   };
 
   const handleSendMessage = () => {
