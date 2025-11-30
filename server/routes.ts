@@ -173,6 +173,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user analytics (total spending)
+  app.get("/api/analytics", async (req, res) => {
+    try {
+      const analytics = await storage.getUserAnalytics(req.userId!);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+      res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+  });
+
   // Send message and get AI response
   app.post("/api/chats/:id/messages", async (req, res) => {
     try {
@@ -201,17 +212,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }));
 
       // Generate AI response with web search enabled if configured
-      const aiResponse = await generateChatResponse(
+      const aiResponseData = await generateChatResponse(
         messagesForAI,
         chat.model,
         chat.enableWebSearch
       );
 
-      // Save AI response
+      // Save AI response with token usage and cost
       const assistantMessage = await storage.createMessage({
         chatId: req.params.id,
         role: "assistant",
-        content: aiResponse,
+        content: aiResponseData.content,
+        inputTokens: aiResponseData.inputTokens,
+        outputTokens: aiResponseData.outputTokens,
+        webSearchUsed: chat.enableWebSearch,
       });
 
       res.json({ userMessage, assistantMessage });

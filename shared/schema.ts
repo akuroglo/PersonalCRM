@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, date, integer, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, date, integer, timestamp, boolean, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -45,12 +45,17 @@ export const messages = pgTable("messages", {
   chatId: varchar("chat_id").notNull(),
   role: varchar("role", { length: 20 }).notNull(),
   content: text("content").notNull(),
+  inputTokens: integer("input_tokens").default(0),
+  outputTokens: integer("output_tokens").default(0),
+  costUsd: decimal("cost_usd", { precision: 10, scale: 6 }).default("0"),
+  webSearchUsed: boolean("web_search_used").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertMessageSchema = createInsertSchema(messages).omit({
   id: true,
   createdAt: true,
+  costUsd: true,
 });
 
 export type InsertMessage = z.infer<typeof insertMessageSchema>;

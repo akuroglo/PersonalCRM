@@ -117,11 +117,18 @@ export interface ChatMessage {
   content: string;
 }
 
+export interface ChatResponseWithUsage {
+  content: string;
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+}
+
 export async function generateChatResponse(
   messages: ChatMessage[],
   model: string = "openai/gpt-4o-mini",
   enableWebSearch: boolean = false
-): Promise<string> {
+): Promise<ChatResponseWithUsage> {
   try {
     // Add :online suffix for web search if enabled and not already present
     const modelId = enableWebSearch && !model.includes(":online")
@@ -136,11 +143,38 @@ export async function generateChatResponse(
       max_tokens: 8192,
     } as any);
 
-    return response.choices[0]?.message?.content || "";
+    const content = response.choices[0]?.message?.content || "";
+    const inputTokens = response.usage?.prompt_tokens || 0;
+    const outputTokens = response.usage?.completion_tokens || 0;
+    
+    // Calculate cost
+    const costUsd = calculateTokensCost(model, inputTokens, outputTokens, enableWebSearch);
+
+    return { content, inputTokens, outputTokens, costUsd };
   } catch (error: any) {
     console.error("OpenRouter API error:", error);
     throw new Error(`Failed to generate response: ${error.message}`);
   }
+}
+
+function calculateTokensCost(
+  model: string,
+  inputTokens: number,
+  outputTokens: number,
+  enableWebSearch: boolean = false
+): number {
+  const modelInfo = AVAILABLE_MODELS.find(m => m.id === model);
+  if (!modelInfo) return 0;
+
+  let cost = (inputTokens / 1000000) * modelInfo.pricing.input +
+    (outputTokens / 1000000) * modelInfo.pricing.output;
+
+  // Add web search cost: $4 per 1000 results, default 5 results per request
+  if (enableWebSearch) {
+    cost += 0.02; // Approximate: 5 results * ($4 / 1000) = $0.02
+  }
+
+  return cost;
 }
 
 export async function generateStreamingResponse(
@@ -160,23 +194,3 @@ export async function generateStreamingResponse(
   } as any);
 }
 
-// Calculate cost per message
-export function calculateMessageCost(
-  model: string,
-  inputTokens: number,
-  outputTokens: number,
-  enableWebSearch: boolean = false
-): number {
-  const modelInfo = AVAILABLE_MODELS.find(m => m.id === model);
-  if (!modelInfo) return 0;
-
-  let cost = (inputTokens / 1000000) * modelInfo.pricing.input +
-    (outputTokens / 1000000) * modelInfo.pricing.output;
-
-  // Add web search cost: $4 per 1000 results, default 5 results per request
-  if (enableWebSearch) {
-    cost += 0.02; // Approximate: 5 results * ($4 / 1000) = $0.02
-  }
-
-  return cost;
-}

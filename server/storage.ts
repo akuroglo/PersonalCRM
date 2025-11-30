@@ -6,6 +6,15 @@ import {
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 
+export interface UserAnalytics {
+  totalCostUsd: number;
+  totalMessages: number;
+  totalTokens: number;
+  webSearchCount: number;
+  chatCount: number;
+  costByModel: Record<string, number>;
+}
+
 export interface IStorage {
   getContacts(userId: string): Promise<Contact[]>;
   getContact(id: string, userId: string): Promise<Contact | undefined>;
@@ -21,6 +30,7 @@ export interface IStorage {
   
   getMessages(chatId: string): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
+  getUserAnalytics(userId: string): Promise<UserAnalytics>;
 }
 
 export class DbStorage implements IStorage {
@@ -107,6 +117,66 @@ export class DbStorage implements IStorage {
       .set({ updatedAt: new Date() })
       .where(eq(chats.id, insertMessage.chatId));
     return result[0];
+  }
+
+  async getUserAnalytics(userId: string): Promise<UserAnalytics> {
+    // Get all chats for user
+    const userChats = await db.select().from(chats).where(eq(chats.userId, userId));
+    const chatIds = userChats.map(c => c.id);
+
+    if (chatIds.length === 0) {
+      return {
+        totalCostUsd: 0,
+        totalMessages: 0,
+        totalTokens: 0,
+        webSearchCount: 0,
+        chatCount: 0,
+        costByModel: {},
+      };
+    }
+
+    // Get all messages for these chats (excluding user messages which have no cost)
+    const userMessages = await db.select().from(messages)
+      .where(eq(messages.role, "assistant"));
+
+    // Aggregate analytics
+    let totalCostUsd = 0;
+    let totalTokens = 0;
+    let webSearchCount = 0;
+    const costByModel: Record<string, number> = {};
+
+    for (const chat of userChats) {
+      const chatMessages = userMessages.filter(m => m.chatId === chat.id);
+      for (const msg of chatMessages) {
+        if (msg.costUsd) {
+          totalCostUsd += parseFloat(msg.costUsd.toString());
+        }
+        totalTokens += (msg.inputTokens || 0) + (msg.outputTokens || 0);
+        if (msg.webSearchUsed) {
+          webSearchCount++;
+        }
+        if (!costByModel[chat.model]) {
+          costByModel[chat.model] = 0;
+        }
+        if (msg.costUsd) {
+          costByModel[chat.model] += parseFloat(msg.costUsd.toString());
+        }
+      }
+    }
+
+    return {
+      totalCostUsd: Math.round(totalCostUsd * 10000) / 10000, // Round to 4 decimals
+      totalMessages: userMessages.length,
+      totalTokens,
+      webSearchCount,
+      chatCount: userChats.length,
+      costByModel: Object.fromEntries(
+        Object.entries(costByModel).map(([k, v]) => [
+          k,
+          Math.round(v * 10000) / 10000
+        ])
+      ),
+    };
   }
 }
 
