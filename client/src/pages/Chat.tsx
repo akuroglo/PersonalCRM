@@ -16,6 +16,19 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarFooter,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarTrigger,
+  SidebarGroup,
+  SidebarGroupContent,
+} from "@/components/ui/sidebar";
 import { 
   Plus, 
   Send, 
@@ -152,6 +165,11 @@ export default function ChatPage() {
     return model?.name || modelId;
   };
 
+  const sidebarStyle = {
+    "--sidebar-width": "18rem",
+    "--sidebar-width-icon": "3rem",
+  };
+
   if (chatsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -164,193 +182,210 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex">
-      <aside className="w-72 border-r bg-muted/30 flex flex-col">
-        <div className="p-4 border-b">
-          <div className="flex items-center justify-between mb-4">
-            <Link href="/">
-              <Button variant="ghost" size="sm" data-testid="link-back-home">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Назад
-              </Button>
-            </Link>
-          </div>
-          <Button 
-            className="w-full" 
-            onClick={() => setIsNewChatOpen(true)}
-            data-testid="button-new-chat"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Новый чат
-          </Button>
-        </div>
-        
-        <ScrollArea className="flex-1">
-          <div className="p-2 space-y-1">
-            {chats.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground text-sm">
-                Нет чатов
-              </div>
-            ) : (
-              chats.map((chat) => (
-                <div
-                  key={chat.id}
-                  className={cn(
-                    "group flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-colors",
-                    selectedChatId === chat.id
-                      ? "bg-primary/10 text-primary"
-                      : "hover-elevate"
+    <SidebarProvider style={sidebarStyle as React.CSSProperties}>
+      <div className="flex h-screen w-full">
+        <Sidebar>
+          <SidebarHeader className="p-4 border-b">
+            <div className="flex items-center justify-between mb-3">
+              <Link href="/">
+                <Button variant="ghost" size="sm" data-testid="link-back-home">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Назад
+                </Button>
+              </Link>
+            </div>
+            <Button 
+              className="w-full" 
+              onClick={() => setIsNewChatOpen(true)}
+              data-testid="button-new-chat"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Новый чат
+            </Button>
+          </SidebarHeader>
+          
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {chats.length === 0 ? (
+                    <div className="text-center py-8 px-4 text-muted-foreground text-sm">
+                      Нет чатов. Создайте первый!
+                    </div>
+                  ) : (
+                    chats.map((chat) => (
+                      <SidebarMenuItem key={chat.id}>
+                        <SidebarMenuButton
+                          isActive={selectedChatId === chat.id}
+                          onClick={() => setSelectedChatId(chat.id)}
+                          data-testid={`chat-item-${chat.id}`}
+                          className="group"
+                        >
+                          <MessageSquare className="w-4 h-4 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{chat.title}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {getModelName(chat.model)}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="opacity-0 group-hover:opacity-100 h-7 w-7 ml-auto"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteChatMutation.mutate(chat.id);
+                            }}
+                            data-testid={`button-delete-chat-${chat.id}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))
                   )}
-                  onClick={() => setSelectedChatId(chat.id)}
-                  data-testid={`chat-item-${chat.id}`}
-                >
-                  <MessageSquare className="w-4 h-4 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{chat.title}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {getModelName(chat.model)}
-                    </p>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+
+          <SidebarFooter className="p-4 border-t">
+            <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+          </SidebarFooter>
+        </Sidebar>
+
+        <div className="flex flex-col flex-1">
+          <header className="h-14 border-b flex items-center px-4 gap-4">
+            <SidebarTrigger data-testid="button-sidebar-toggle" />
+            {selectedChatId && currentChat && (
+              <>
+                <h1 className="text-lg font-semibold" data-testid="text-chat-title">
+                  {currentChat.title}
+                </h1>
+                <span className="text-sm text-muted-foreground">
+                  {getModelName(currentChat.model)}
+                </span>
+              </>
+            )}
+          </header>
+
+          <main className="flex-1 overflow-hidden flex flex-col">
+            {!selectedChatId ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center space-y-4 max-w-md px-6">
+                  <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+                    <Bot className="w-10 h-10 text-primary" />
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="opacity-0 group-hover:opacity-100 h-7 w-7"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteChatMutation.mutate(chat.id);
-                    }}
-                    data-testid={`button-delete-chat-${chat.id}`}
+                  <h2 className="text-2xl font-semibold">AI Ассистент</h2>
+                  <p className="text-muted-foreground">
+                    Начните общение с искусственным интеллектом. Выберите существующий чат из списка слева или создайте новый.
+                  </p>
+                  <Button 
+                    size="lg"
+                    onClick={() => setIsNewChatOpen(true)} 
+                    data-testid="button-create-first-chat"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Plus className="w-4 h-4 mr-2" />
+                    Создать чат
                   </Button>
                 </div>
-              ))
-            )}
-          </div>
-        </ScrollArea>
+              </div>
+            ) : (
+              <>
+                <ScrollArea className="flex-1 p-6">
+                  {chatLoading ? (
+                    <div className="flex items-center justify-center h-full">
+                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : currentChat?.messages.length === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center text-muted-foreground max-w-sm">
+                        <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium mb-2">Начните диалог</p>
+                        <p className="text-sm">Введите сообщение ниже, чтобы начать общение с AI ассистентом</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-6 max-w-3xl mx-auto">
+                      {currentChat?.messages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={cn(
+                            "flex gap-4",
+                            message.role === "assistant" ? "items-start" : "items-start flex-row-reverse"
+                          )}
+                          data-testid={`message-${message.id}`}
+                        >
+                          <div
+                            className={cn(
+                              "w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0",
+                              message.role === "assistant"
+                                ? "bg-primary/10 text-primary"
+                                : "bg-muted"
+                            )}
+                          >
+                            {message.role === "assistant" ? (
+                              <Bot className="w-5 h-5" />
+                            ) : (
+                              <User className="w-5 h-5" />
+                            )}
+                          </div>
+                          <div
+                            className={cn(
+                              "flex-1 rounded-xl p-4 max-w-[80%]",
+                              message.role === "assistant"
+                                ? "bg-muted"
+                                : "bg-primary text-primary-foreground ml-auto"
+                            )}
+                          >
+                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                          </div>
+                        </div>
+                      ))}
+                      {sendMessageMutation.isPending && (
+                        <div className="flex gap-4 items-start">
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-primary/10 text-primary">
+                            <Bot className="w-5 h-5" />
+                          </div>
+                          <div className="bg-muted rounded-xl p-4">
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          </div>
+                        </div>
+                      )}
+                      <div ref={messagesEndRef} />
+                    </div>
+                  )}
+                </ScrollArea>
 
-        <div className="p-4 border-t text-xs text-muted-foreground">
-          {user?.email}
-        </div>
-      </aside>
-
-      <main className="flex-1 flex flex-col">
-        {!selectedChatId ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center space-y-4">
-              <MessageSquare className="w-16 h-16 mx-auto text-muted-foreground/50" />
-              <h2 className="text-xl font-semibold">Выберите чат</h2>
-              <p className="text-muted-foreground">
-                Выберите существующий чат или создайте новый
-              </p>
-              <Button onClick={() => setIsNewChatOpen(true)} data-testid="button-create-first-chat">
-                <Plus className="w-4 h-4 mr-2" />
-                Создать чат
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <header className="h-16 border-b flex items-center px-6 gap-4">
-              <h1 className="text-lg font-semibold" data-testid="text-chat-title">
-                {currentChat?.title || "Загрузка..."}
-              </h1>
-              <span className="text-sm text-muted-foreground">
-                {currentChat && getModelName(currentChat.model)}
-              </span>
-            </header>
-
-            <ScrollArea className="flex-1 p-6">
-              {chatLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : currentChat?.messages.length === 0 ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center text-muted-foreground">
-                    <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>Начните диалог с AI</p>
+                <div className="border-t p-4">
+                  <div className="max-w-3xl mx-auto flex gap-3">
+                    <Input
+                      placeholder="Введите сообщение..."
+                      value={messageInput}
+                      onChange={(e) => setMessageInput(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      disabled={sendMessageMutation.isPending}
+                      className="flex-1"
+                      data-testid="input-message"
+                    />
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={!messageInput.trim() || sendMessageMutation.isPending}
+                      data-testid="button-send-message"
+                    >
+                      {sendMessageMutation.isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </Button>
                   </div>
                 </div>
-              ) : (
-                <div className="space-y-6 max-w-3xl mx-auto">
-                  {currentChat?.messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={cn(
-                        "flex gap-4",
-                        message.role === "assistant" ? "items-start" : "items-start flex-row-reverse"
-                      )}
-                      data-testid={`message-${message.id}`}
-                    >
-                      <div
-                        className={cn(
-                          "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
-                          message.role === "assistant"
-                            ? "bg-primary/10 text-primary"
-                            : "bg-muted"
-                        )}
-                      >
-                        {message.role === "assistant" ? (
-                          <Bot className="w-4 h-4" />
-                        ) : (
-                          <User className="w-4 h-4" />
-                        )}
-                      </div>
-                      <div
-                        className={cn(
-                          "flex-1 rounded-xl p-4 max-w-[80%]",
-                          message.role === "assistant"
-                            ? "bg-muted"
-                            : "bg-primary text-primary-foreground ml-auto"
-                        )}
-                      >
-                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                      </div>
-                    </div>
-                  ))}
-                  {sendMessageMutation.isPending && (
-                    <div className="flex gap-4 items-start">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-primary/10 text-primary">
-                        <Bot className="w-4 h-4" />
-                      </div>
-                      <div className="bg-muted rounded-xl p-4">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-              )}
-            </ScrollArea>
-
-            <div className="border-t p-4">
-              <div className="max-w-3xl mx-auto flex gap-3">
-                <Input
-                  placeholder="Введите сообщение..."
-                  value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  disabled={sendMessageMutation.isPending}
-                  className="flex-1"
-                  data-testid="input-message"
-                />
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={!messageInput.trim() || sendMessageMutation.isPending}
-                  data-testid="button-send-message"
-                >
-                  {sendMessageMutation.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-          </>
-        )}
-      </main>
+              </>
+            )}
+          </main>
+        </div>
+      </div>
 
       <Dialog open={isNewChatOpen} onOpenChange={setIsNewChatOpen}>
         <DialogContent className="sm:max-w-md">
@@ -404,6 +439,6 @@ export default function ChatPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </SidebarProvider>
   );
 }
