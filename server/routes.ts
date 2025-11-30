@@ -1,9 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertContactSchema } from "@shared/schema";
+import { insertContactSchema, insertChatSchema, insertMessageSchema } from "@shared/schema";
 import { authMiddleware } from "./middleware/auth";
 import { z } from "zod";
+import { generateChatResponse, AVAILABLE_MODELS } from "./openrouter";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Config endpoint - returns Supabase configuration
@@ -83,6 +84,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete contact" });
+    }
+  });
+
+  // Chat routes
+  app.use("/api/chats", authMiddleware);
+
+  // Get available models
+  app.get("/api/models", (_req, res) => {
+    res.json(AVAILABLE_MODELS);
+  });
+
+  // Get all chats
+  app.get("/api/chats", async (req, res) => {
+    try {
+      const userChats = await storage.getChats(req.userId!);
+      res.json(userChats);
+    } catch (error) {
+      console.error("Error fetching chats:", error);
+      res.status(500).json({ error: "Failed to fetch chats" });
+    }
+  });
+
+  // Get single chat with messages
+  app.get("/api/chats/:id", async (req, res) => {
+    try {
+      const chat = await storage.getChat(req.params.id, req.userId!);
+      if (!chat) {
+        return res.status(404).json({ error: "Chat not found" });
+      }
+      const chatMessages = await storage.getMessages(req.params.id);
+      res.json({ ...chat, messages: chatMessages });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch chat" });
+    }
+  });
+
+  // Create chat
+  app.post("/api/chats", async (req, res) => {
+    try {
+      const data = insertChatSchema.parse(req.body);
+      const chat = await storage.createChat(data, req.userId!);
+      res.status(201).json(chat);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Error creating chat:", error);
+      res.status(500).json({ error: "Failed to create chat" });
+    }
+  });
+
+  // Update chat title
+  app.put("/api/chats/:id", async (req, res) => {
+    try {
+      const { title } = req.body;
+      if (!title) {
+        return res.status(400).json({ error: "Title is required" });
+      }
+      const chat = await storage.updateChat(req.params.id, title, req.userId!);
+      if (!chat) {
+        return res.status(404).json({ error: "Chat not found" });
+      }
+      res.json(chat);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update chat" });
+    }
+  });
+
+  // Delete chat
+  app.delete("/api/chats/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteChat(req.params.id, req.userId!);
+      if (!success) {
+        return res.status(404).json({ error: "Chat not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete chat" });
+    }
+  });
+
+  // Send message and get AI response
+  app.post("/api/chats/:id/messages", async (req, res) => {
+    try {
+      const chat = await storage.getChat(req.params.id, req.userId!);
+      if (!chat) {
+        return res.status(404).json({ error: "Chat not found" });
+      }
+
+      const { content } = req.body;
+      if (!content) {
+        return res.status(400).json({ error: "Content is required" });
+      }
+
+      // Save user message
+      const userMessage = await storage.createMessage({
+        chatId: req.params.id,
+        role: "user",
+        content,
+      });
+
+      // Get chat history for context
+      const chatMessages = await storage.getMessages(req.params.id);
+      const messagesForAI = chatMessages.map(m => ({
+        role: m.role as "user" | "assistant" | "system",
+        content: m.content,
+      }));
+
+      // Generate AI response
+      const aiResponse = await generateChatResponse(messagesForAI, chat.model);
+
+      // Save AI response
+      const assistantMessage = await storage.createMessage({
+        chatId: req.params.id,
+        role: "assistant",
+        content: aiResponse,
+      });
+
+      res.json({ userMessage, assistantMessage });
+    } catch (error: any) {
+      console.error("Error sending message:", error);
+      res.status(500).json({ error: error.message || "Failed to send message" });
     }
   });
 
