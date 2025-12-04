@@ -1,9 +1,14 @@
 import OpenAI from "openai";
 
-const openrouter = new OpenAI({
-  baseURL: process.env.AI_INTEGRATIONS_OPENROUTER_BASE_URL,
-  apiKey: process.env.AI_INTEGRATIONS_OPENROUTER_API_KEY
-});
+// Initialize OpenRouter client only if credentials are available
+// This allows the server to start even without OpenRouter configured
+const openrouterApiKey = process.env.AI_INTEGRATIONS_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY;
+const openrouterBaseURL = process.env.AI_INTEGRATIONS_OPENROUTER_BASE_URL || (openrouterApiKey ? "https://openrouter.ai/api/v1" : undefined);
+
+const openrouter = openrouterApiKey ? new OpenAI({
+  baseURL: openrouterBaseURL,
+  apiKey: openrouterApiKey
+}) : null as any;
 
 export interface ModelInfo {
   id: string;
@@ -129,6 +134,9 @@ export async function generateChatResponse(
   model: string = "openai/gpt-4o-mini",
   enableWebSearch: boolean = false
 ): Promise<ChatResponseWithUsage> {
+  if (!openrouter) {
+    throw new Error("OpenRouter API is not configured. Please set OPENROUTER_API_KEY or AI_INTEGRATIONS_OPENROUTER_API_KEY environment variable.");
+  }
   try {
     // Add :online suffix for web search if enabled and not already present
     const modelId = enableWebSearch && !model.includes(":online")
@@ -182,6 +190,9 @@ export async function generateStreamingResponse(
   model: string = "openai/gpt-4o-mini",
   enableWebSearch: boolean = false
 ) {
+  if (!openrouter) {
+    throw new Error("OpenRouter API is not configured. Please set OPENROUTER_API_KEY or AI_INTEGRATIONS_OPENROUTER_API_KEY environment variable.");
+  }
   const modelId = enableWebSearch && !model.includes(":online")
     ? `${model}:online` 
     : model;
